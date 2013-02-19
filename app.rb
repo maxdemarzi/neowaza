@@ -21,6 +21,14 @@ class App < Sinatra::Base
     end
   end
 
+  def nodes
+    neo = Neography::Rest.new
+    cypher_query =  " START node = node(*)"
+    cypher_query << " RETURN ID(node), node"
+    cypher_query << " LIMIT 200"
+    neo.execute_query(cypher_query)["data"].collect{|n| {"id" => n[0]}.merge(n[1]["data"])}
+  end
+  
   def edges(username = "neo4j")
     neo = Neography::Rest.new
     cypher_query = "START n=node:users(twid={username}) 
@@ -30,6 +38,7 @@ class App < Sinatra::Base
   end
 
   get "/" do
+    #gon.nodes = nodes 
     gon.edges = (edges.sample(3) << {"source"=>"neo4j", "target" => "hashtag.waza"})
     haml :index
   end

@@ -11,6 +11,13 @@ var colors = [
 0x17becfff, 0x9edae5ff];
       
 function addNeo(graph) {
+
+	graph.addNode(gon.edges[0].source, {twid : gon.edges[0].source});
+	
+	for (n in gon.nodes) {	
+		graph.addNode(gon.nodes[n].target, {twid : gon.nodes[n].target });
+		}
+	
 	for (n in gon.edges) {
 		graph.addLink(gon.edges[n].source, gon.edges[n].target);
 	  }	
@@ -33,16 +40,54 @@ function onLoad() {
            return Viva.Graph.View.webglImage(12, "/image/"+node["id"]);
         })
         .link(function(link) {
-            return Viva.Graph.View.webglLine(colors[(1) << 0]);
+			var t = Viva.Graph.View.webglLine(3014898687);
+			return t.oldColor = 3014898687, t
         });
-    
+
     var renderer = Viva.Graph.View.renderer(graph,
-        {
-            layout     : layout,
-            graphics   : graphics,
-            container  : document.getElementById('graph1'),
-            renderLinks : true
-        });
+       {
+           layout     : layout,
+           graphics   : graphics,
+           container  : document.getElementById('graph1'),
+           renderLinks : true
+       });
+
+		var p = function (e) {
+		            var t = $("#hoveredName"),
+		                n = '<br/><img src="http://api.twitter.com/1/users/profile_image?screen_name=' + e.data.twid + '&size=bigger"' + '></img>';
+		            t.empty().text(e.data.twid).append(n).show()
+		    };
+		 
+		var d = function () {
+					            $("#hoveredName").hide().empty()
+					        };
+
+     var inputs = Viva.Graph.webglInputEvents(graphics, graph),
+         r = null,
+         i = function (e, n) {
+               e && e.id && graph.forEachLinkedNode(e.id, function (e, t) {
+                   t.ui.color = n || t.ui.oldColor
+               })
+           };
+
+         inputs.mouseEnter(function (n) {
+             p(n), i(r), r = n, graph.forEachLinkedNode(n.id, function (t, n) {
+                 n.ui.color = 4278190335, graphics.bringLinkToFront(n.ui)
+             }), renderer.rerender()
+         }).mouseLeave(function (e) {
+             d(), i(r), r = null, i(e), renderer.rerender()
+         }).dblClick(function (e) {
+             h(e)
+         }).click(function (e) {
+             m(e)
+         })
+		        
+
+
+
+
+    
+
 
     renderer.run();
     addNeo(graph);
