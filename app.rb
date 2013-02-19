@@ -36,7 +36,7 @@ class App < Sinatra::Base
     cypher_query << " RETURN ID(source), ID(target)"
     cypher_query << " ORDER BY ID(source), ID(target)"
     cypher_query << " LIMIT 1000"
-    cypher_query = "start n=node:users(twid=\"peterneubauer\") match n-[:KNOWS]-m return ID(n), ID(m)"
+    cypher_query = "start n=node:users(twid=\"peterneubauer\") match n-[:KNOWS]-m return n.twid as n, m.twid as m"
     neo.execute_query(cypher_query)["data"].collect{|n| {"source" => n[0], "target" => n[1]} }
   end
 
@@ -45,14 +45,20 @@ class App < Sinatra::Base
     gon.edges = edges
     haml :index
   end
-  
-  get "/image/:id" do 
+    
+  @@images={}
+  get "/image/:id" do |id|
     #content_type 'application/octet-stream'
     content_type 'image/png', :layout => false
     response['Access-Control-Allow-Origin'] = "*"
 #    http://api.twitter.com/1/users/profile_image/:screen_name.format
-    image = HTTParty.get("http://api.twitter.com/1/users/profile_image/maxdemarzi.png").parsed_response
-    image
+    file="/img/#{id}.png"
+    unless (File.exists?("public#{file}"))
+      f = File.new("public#{file}", "w+b")
+      f.write HTTParty.get("http://api.twitter.com/1/users/profile_image/#{id}.png").parsed_response
+      f.close
+    end
+    redirect(file)
   end
 
 end
