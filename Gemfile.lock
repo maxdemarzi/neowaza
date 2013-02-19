@@ -42,6 +42,7 @@ GEM
     redis (3.0.2)
     redis-namespace (1.2.1)
       redis (~> 3.0.0)
+    rmagick (2.13.2)
     rubyzip (0.9.9)
     sidekiq (2.6.5)
       celluloid (~> 0.12.0)
@@ -97,6 +98,7 @@ DEPENDENCIES
   neography
   oj
   redis
+  rmagick
   sidekiq
   sidekiq-failures
   sinatra
