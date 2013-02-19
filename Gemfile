@@ -24,3 +24,4 @@ gem 'sprockets'
 # Others
 gem 'oj'
 gem 'haml'
+gem 'gon-sinatra'

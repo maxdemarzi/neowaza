@@ -5,9 +5,10 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     %meta{ :content => "An example application using Twitter and Neo4j", :name => "description" }
     %meta{ :content => "Max De Marzi", :name => "author" }
-    %meta{ :content => "3 days", :name => "revisit-after" }
-    %link{ :href => "http://creativecommons.org/licenses/by/3.0/", :rel => "license", :title => "Creative Commons Attribution 3.0 Unported License" }
-    %link{ :charset => "utf-8", :href => "/css/screen.css", :media => "screen", :rel => "stylesheet", :type => "text/css" }
-  %body
+    %link{ :charset => "utf-8", :href => "/css/neoviva.css", :media => "screen", :rel => "stylesheet", :type => "text/css" }
+    = include_gon
+    %script{:src  => "/js/vivagraph.min.js", :type => "text/javascript"}
+    %script{:src  => "/js/neoviva.js", :type => "text/javascript"}
+  %body{:style => "background-color: black;", :onload => "onLoad()"}
     #content  
       = yield
