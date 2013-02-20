@@ -103,12 +103,14 @@ puts "#{id}"
     file="/img/#{id}.png"
     unless (File.exists?("public#{file}"))
       if id =~ /^::/
-        make_tags(id)
+        return HTTParty.get("http://ansrv.com/png?s=#{id[2..-1]}&c=74d0f4&b=231d40&size=5").parsed_response
+        #make_tags(id)
       else
-        get_images([id])
+        return HTTParty.get("http://api.twitter.com/1/users/profile_image?screen_name=#{id}&size=bigger").parsed_response
+        #get_images([id])
       end
     end
-    redirect(file)
+    #redirect(file)
   end
 
   def pre_save_images
