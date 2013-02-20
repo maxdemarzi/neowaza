@@ -7,6 +7,8 @@ require 'lib/neowaza'
 require 'app'
 require 'sidekiq/web'
 
+Dir.mkdir "public/img" unless Dir.exist? "public/img"
+
 map '/' do
   run App
 end
