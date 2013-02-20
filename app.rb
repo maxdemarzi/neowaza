@@ -35,7 +35,7 @@ class App < Sinatra::Base
                     MATCH n-[:TWEETED]->t-[:MENTIONS|TAGGED]->m 
                     RETURN n.twid as me, coalesce(''+m.twid?,'::'+m.name) as other, count(other) as cnt 
                     ORDER BY cnt DESC 
-                    LIMIT 1000
+                    LIMIT 100
                    "
     neo.execute_query(cypher_query,  {:username => username})["data"].collect{|n| {"source" => n[0], "target" => n[1]} }
   end
@@ -46,7 +46,7 @@ class App < Sinatra::Base
                     MATCH m-[:TWEETED|TAGGED]-t-[:TAGGED]->n
                     RETURN n.name as me, coalesce(''+m.twid?,'::'+m.name) as other, count(other) as cnt
                     ORDER BY cnt DESC
-                    LIMIT 1000
+                    LIMIT 100
                    "
     neo.execute_query(cypher_query,  {:tag => tag})["data"].collect{|n| {"source" => n[0], "target" => n[1]} }
   end
@@ -55,22 +55,22 @@ class App < Sinatra::Base
     neo = Neography::Rest.new
     cypher_query = "START n=node:users(twid={username})
                     MATCH n-[:TWEETED]->t
-                    RETURN t.id, t.link,t.date, t.text
+                    RETURN distinct t.link,t.date, t.text
                     ORDER BY t.date desc
                     LIMIT 10
                    "
-    neo.execute_query(cypher_query,  {:username => username})["data"].collect{|n| {"id" => n[0], "link" => n[1],"date" => n[2],"text" => n[3]}}
+    neo.execute_query(cypher_query,  {:username => username})["data"].collect{|n| {"link" => n[0],"date" => n[1],"text" => n[2]}}
   end
 
   def tagged_tweets(tag = "neo4j")
     neo = Neography::Rest.new
     cypher_query = "START n=node:tags(name={tag})
                     MATCH n<-[:TAGGED]-t
-                    RETURN t.id, t.link,t.date, t.text
+                    RETURN distinct t.link,t.date, t.text
                     ORDER BY t.date desc
                     LIMIT 10
                    "
-    neo.execute_query(cypher_query,  {:tag => tag})["data"].collect{|n| {"id" => n[0], "link" => n[1],"date" => n[2],"text" => n[3]}}
+    neo.execute_query(cypher_query,  {:tag => tag})["data"].collect{|n| {"link" => n[0],"date" => n[1],"text" => n[2]}}
   end
 
   get "/edges/:id" do |id|
@@ -103,32 +103,31 @@ puts "#{id}"
     file="/img/#{id}.png"
     unless (File.exists?("public#{file}"))
       if id =~ /^::/
-        return HTTParty.get("http://ansrv.com/png?s=#{id[2..-1]}&c=74d0f4&b=231d40&size=5").parsed_response
+        make_mage(id,"http://ansrv.com/png?s=#{id[2..-1]}&c=74d0f4&b=231d40&size=5");
+        # return HTTParty.get().parsed_response
         #make_tags(id)
       else
-        return HTTParty.get("http://api.twitter.com/1/users/profile_image?screen_name=#{id}&size=bigger").parsed_response
+        make_image(id)
         #get_images([id])
       end
     end
-    #redirect(file)
+    redirect(file)
   end
 
   def pre_save_images
-    cypher = "START n = node(*) 
-              WHERE has(n.twid) 
-              RETURN DISTINCT n.twid"
-    ids = neo.execute_query(cypher)["data"]
-    get_images(ids)
+    cypher = "START n = node:users('twid:*') RETURN DISTINCT n.twid"
+    neo.execute_query(cypher)["data"].each{ |id| make_image(id[0]) }
+    cypher = "START n = node:tags('name:*') RETURN DISTINCT n.name"
+    neo.execute_query(cypher)["data"].each{ |id| make_image('::'+id[0],"http://ansrv.com/png?s=#{id[0]}&c=74d0f4&b=231d40&size=5") }
   end
 
-  def get_images(ids)
-    ids.each do |id|
-      file="/img/#{id[0]}.png"
-      unless (File.exists?("public#{file}"))
-        f = File.new("public#{file}", "w+b")
-        f.write HTTParty.get("http://api.twitter.com/1/users/profile_image?screen_name=#{id[0]}&size=bigger").parsed_response
-        f.close
-      end
+  def make_image(id, url="http://api.twitter.com/1/users/profile_image?screen_name=#{id}&size=bigger")
+    $stderr.puts id
+    file="/img/#{id}.png"
+    unless File.exists?("public#{file}")
+      f = File.new("public#{file}", "w+b")
+      f.write HTTParty.get(url).parsed_response
+      f.close
     end
   end
 

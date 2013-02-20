@@ -104,7 +104,7 @@ function onLoad() {
             }});
     };
     var onMouseLeave = function () {
-        $("#hoveredName").hide().empty()
+        // $("#hoveredName").hide().empty()
         clearTimeout(timeout);
     };
 
