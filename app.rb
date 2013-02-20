@@ -32,26 +32,32 @@ class App < Sinatra::Base
   def edges(username = "neo4j")
     neo = Neography::Rest.new
     cypher_query = "START n=node:users(twid={username}) 
-                    MATCH n-[:KNOWS]-m 
-                    RETURN n.twid as n, m.twid as m"
+                    MATCH n-[:TWEETED]->t-[:MENTIONS|TAGGED]->m 
+                    RETURN n.twid as me, coalesce(''+m.twid?,'::'+m.name) as other, count(other) as cnt 
+                    ORDER BY cnt DESC 
+                    LIMIT 3 
+                   "
     neo.execute_query(cypher_query,  {:username => username})["data"].collect{|n| {"source" => n[0], "target" => n[1]} }
   end
 
   get "/" do
-    #gon.nodes = nodes 
-    gon.edges = (edges.sample(3) << {"source"=>"neo4j", "target" => "hashtag.waza"})
+#    gon.nodes = nodes 
+    gon.edges = edges #(edges.sample(3) << {"source"=>"neo4j", "target" => "::infinitegraph"})
     haml :index
   end
     
   get "/image/:id" do |id|
+puts "#{id}"
     #content_type 'application/octet-stream'
     content_type 'image/png', :layout => false
     response['Access-Control-Allow-Origin'] = "*"
     file="/img/#{id}.png"
     unless (File.exists?("public#{file}"))
-      f = File.new("public#{file}", "w+b")
-      f.write HTTParty.get("http://api.twitter.com/1/users/profile_image?screen_name=#{id}&size=bigger").parsed_response
-      f.close
+      if id =~ /^::/
+        make_tags(id)
+      else
+        get_images([id])
+      end
     end
     redirect(file)
   end
@@ -75,25 +81,20 @@ class App < Sinatra::Base
     end
   end
 
-  def make_tags(ids)
-    id = "waza"
-    img = Magick::Image.new(146, 73) do
-      self.background_color = 'transparent'
+  def make_tags(id="waza")
+    img = Magick::Image.new(256, 256) do
+      self.background_color = '#231d40' #'none'
     end
     text = Magick::Draw.new
-    text.annotate(img, 0, 0, 0, 10, "#" + id) {
+    text.annotate(img, 0, 0, 2, 80, "#" + id[2..-1]) do
         self.gravity = Magick::SouthGravity
-        self.pointsize = 50 - (2 * id.size)
-        self.stroke = 'transparent'
-        self.fill = '#FFFFFF'
+        self.pointsize = 70 - (2 * id.size)
+#        self.font_family = 'Helvetica'
+        self.stroke = 'none'
+        self.fill = '#74d0f4'
         self.font_weight = Magick::BoldWeight
-        }
-    img.write("##{id}.png")
-    
-#    img = MiniMagick::Image.from_file("public/img/1x1-pixel.png")
-#    img.resize "5x#{id.size}"
-#    image.write "##{id}.png"
-    
+    end
+    img.write("gif:public/img/#{id}.png")
   end
 
 end

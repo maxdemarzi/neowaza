@@ -53,14 +53,23 @@ function onLoad() {
        });
 
 		var p = function (e) {
-		            var t = $("#hoveredName"),
-		                n = '<br/><img src="http://api.twitter.com/1/users/profile_image?screen_name=' + e.data.twid + '&size=bigger"' + '></img>';
-		            t.empty().text(e.data.twid).append(n).show()
+		            var t = $("#hoveredName");
+					var id=e['id'];
+		            if (id.match(/^::/)) {
+						id="#"+id.substring(2);
+			            t.text(id).append(n).show();
+					} else {
+			            var n = '<br/><img src="http://api.twitter.com/1/users/profile_image?screen_name=' + id + '&size=bigger"' + '></img>';
+			            t.empty().text(id).append(n).show()
+					}
 		    };
 		 
 		var d = function () {
 					            $("#hoveredName").hide().empty()
 					        };
+		var m= function (e) {
+		   console.log("click",e)
+		};
 
      var inputs = Viva.Graph.webglInputEvents(graphics, graph),
          r = null,
