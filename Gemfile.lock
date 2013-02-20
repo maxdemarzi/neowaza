@@ -21,6 +21,7 @@ GEM
       multi_json (~> 1.0)
       multi_xml
     json (1.7.7)
+    mime-types (1.19)
     multi_json (1.6.1)
     multi_xml (0.5.2)
     multipart-post (1.1.5)
@@ -42,7 +43,9 @@ GEM
     redis (3.0.2)
     redis-namespace (1.2.1)
       redis (~> 3.0.0)
-    rmagick (2.13.2)
+    rest-client (1.6.7)
+      mime-types (>= 1.16)
+    rmagick (2.13.1)
     rubyzip (0.9.9)
     sidekiq (2.6.5)
       celluloid (~> 0.12.0)
@@ -98,7 +101,8 @@ DEPENDENCIES
   neography
   oj
   redis
-  rmagick
+  rest-client
+  rmagick (= 2.13.1)
   sidekiq
   sidekiq-failures
   sinatra

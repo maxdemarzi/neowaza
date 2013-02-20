@@ -1,3 +1,5 @@
+.idea
+neography.log
 redis
 dump.rdb
 public/img

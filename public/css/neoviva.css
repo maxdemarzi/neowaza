@@ -20,5 +20,6 @@
     height: 100%; 
 }
 
-#hoveredName {position: absolute; top: 40px; left: 10px; padding: 7px; background-color: #EFEFEF; text-align: center; display: none;}
+#hoveredName {position: absolute; top: 40px; left: 10px; padding: 7px; background-color: #EFEFEF; text-align: center; display: none; max-width: 20em; font-family: "Helvetica";}
 #hoveredName > img { margin-top: 6px;}
+#hoveredName > div { font-size: smaller; text-align: left; margin-bottom: 5px; border-bottom: 1px solid black;}

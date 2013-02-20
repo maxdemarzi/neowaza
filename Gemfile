@@ -25,4 +25,5 @@ gem 'sprockets'
 gem 'oj'
 gem 'haml'
 gem 'gon-sinatra'
-gem 'rmagick'
+gem 'rest-client'
+gem 'rmagick', "2.13.1"

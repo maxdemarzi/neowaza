@@ -35,9 +35,58 @@ class App < Sinatra::Base
                     MATCH n-[:TWEETED]->t-[:MENTIONS|TAGGED]->m 
                     RETURN n.twid as me, coalesce(''+m.twid?,'::'+m.name) as other, count(other) as cnt 
                     ORDER BY cnt DESC 
-                    LIMIT 3 
+                    LIMIT 1000
                    "
     neo.execute_query(cypher_query,  {:username => username})["data"].collect{|n| {"source" => n[0], "target" => n[1]} }
+  end
+
+  def tagged_edges(tag = "neo4j")
+    neo = Neography::Rest.new
+    cypher_query = "START n=node:tags(name={tag})
+                    MATCH m-[:TWEETED|TAGGED]-t-[:TAGGED]->n
+                    RETURN n.name as me, coalesce(''+m.twid?,'::'+m.name) as other, count(other) as cnt
+                    ORDER BY cnt DESC
+                    LIMIT 1000
+                   "
+    neo.execute_query(cypher_query,  {:tag => tag})["data"].collect{|n| {"source" => n[0], "target" => n[1]} }
+  end
+
+  def tweets(username = "neo4j")
+    neo = Neography::Rest.new
+    cypher_query = "START n=node:users(twid={username})
+                    MATCH n-[:TWEETED]->t
+                    RETURN t.id, t.link,t.date, t.text
+                    ORDER BY t.date desc
+                    LIMIT 10
+                   "
+    neo.execute_query(cypher_query,  {:username => username})["data"].collect{|n| {"id" => n[0], "link" => n[1],"date" => n[2],"text" => n[3]}}
+  end
+
+  def tagged_tweets(tag = "neo4j")
+    neo = Neography::Rest.new
+    cypher_query = "START n=node:tags(name={tag})
+                    MATCH n<-[:TAGGED]-t
+                    RETURN t.id, t.link,t.date, t.text
+                    ORDER BY t.date desc
+                    LIMIT 10
+                   "
+    neo.execute_query(cypher_query,  {:tag => tag})["data"].collect{|n| {"id" => n[0], "link" => n[1],"date" => n[2],"text" => n[3]}}
+  end
+
+  get "/edges/:id" do |id|
+    if id=~/^::/
+      tagged_edges(id[2..-1]).to_json
+    else
+      edges(id).to_json
+    end
+  end
+
+  get "/tweets/:id" do |id|
+    if id=~/^::/
+      tagged_tweets(id[2..-1]).to_json
+    else
+      tweets(id).to_json
+    end
   end
 
   get "/" do
@@ -89,7 +138,7 @@ puts "#{id}"
     text.annotate(img, 0, 0, 2, 80, "#" + id[2..-1]) do
         self.gravity = Magick::SouthGravity
         self.pointsize = 70 - (2 * id.size)
-#        self.font_family = 'Helvetica'
+        self.font_family = 'Times'
         self.stroke = 'none'
         self.fill = '#74d0f4'
         self.font_weight = Magick::BoldWeight
