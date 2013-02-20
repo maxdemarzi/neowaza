@@ -54,6 +54,10 @@ function onLoad() {
     });
 
     var graphics = Viva.Graph.View.webglGraphics();
+    var timeout;
+    var inputs = Viva.Graph.webglInputEvents(graphics, graph);
+    var lastNode = null;
+
     graphics.setNodeProgram(new Viva.Graph.View.webglImageNodeProgram())
     graphics
         .node(function (node) {
@@ -72,8 +76,15 @@ function onLoad() {
             renderLinks:true
         });
 
+
+    var onMouseEnter = function(node) {
+        clearTimeout(timeout);
+        timeout = setTimeout(function() { showBox(node);},250);
+    }
+
     var showBox = function (node) {
-        var t = $("#hoveredName");
+        var t = $("#hoveredName").empty();
+        if (!node) return;
         var id = node['id'];
         if (id.match(/^::/)) {
             id = "#" + id.substring(2);
@@ -92,12 +103,16 @@ function onLoad() {
                 }
             }});
     };
-
     var onMouseLeave = function () {
         $("#hoveredName").hide().empty()
+        clearTimeout(timeout);
     };
+
     var onClick = function (node) {
         console.log("click", node)
+        showBox(node);
+        graphics.graphCenterChanged(node.position.x,node.position.y);
+        renderer.rerender()
         $.ajax("/edges/" + node.id, {
             type:"GET",
             dataType:"json",
@@ -111,27 +126,34 @@ function onLoad() {
         console.log("double-click", node)
     };
 
-    var inputs = Viva.Graph.webglInputEvents(graphics, graph),
-        lastNode = null,
-        highlightLinks = function (node, n) {
-            node && node.id && graph.forEachLinkedNode(node.id, function (aNode, link) {
-                link.ui.color = n || link.ui.oldColor
+    var unHighlightLinks = function (node, color) {
+        if (node && node.id) {
+            node.ui.size=12;
+            graph.forEachLinkedNode(node.id, function (aNode, link) {
+                link.ui.color = color || link.ui.oldColor
             })
-        };
+        }
+    };
+    var highlightNode = function(node, color) {
+        if (!(node && node.id && node.ui)) return;
+        node.ui.size=36;
+        graph.forEachLinkedNode(node.id, function (aNode, link) {
+            link.ui.color = color || 4278190335;
+            graphics.bringLinkToFront(link.ui)
+        })
+    }
 
     inputs.mouseEnter(function (node) {
-        showBox(node)
-        highlightLinks(lastNode)
+        onMouseEnter(node)
+        unHighlightLinks(lastNode)
         lastNode = node
-        graph.forEachLinkedNode(node.id, function (aNode, link) {
-            link.ui.color = 4278190335, graphics.bringLinkToFront(link.ui)
-        })
+        highlightNode(node)
         renderer.rerender()
     }).mouseLeave(function (node) {
             onMouseLeave()
-            highlightLinks(lastNode)
+            unHighlightLinks(lastNode)
             lastNode = null
-            highlightLinks(node)
+            unHighlightLinks(node)
             renderer.rerender()
         }).dblClick(function (node) {
             onDblClick(node)
