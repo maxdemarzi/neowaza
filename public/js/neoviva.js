@@ -10,37 +10,47 @@ var colors = [
     0xbcbd22ff, 0xdbdb8dff,
     0x17becfff, 0x9edae5ff];
 
+Array.prototype.distinct = function() {
+    var derivedArray = [];
+    for (var i = 0; i < this.length; i += 1) {
+        if (!derivedArray.indexOf(this[i])!=-1) {
+            derivedArray.push(this[i])
+        }
+    }
+    return derivedArray;
+};
+
+var nodes=[];
+
 function addNeo(graph, data) {
-    function addNode(id) {
+    function addNode(id,url) {
+        if (!id || typeof id == "undefined") return null;
         var node = graph.getNode(id);
-        if (!node) node = graph.addNode(id, {twid:id});
+        if (!node) node = graph.addNode(id, {twid:id}); // , url:url
         return node;
     }
 
     if (!data) data = gon;
 
-    var source = data.edges[0].source;
-    addNode(source);
-
-    for (n in data.nodes) {
-        addNode(data.nodes[n].target);
+    for (n in data.edges) {
+        if (data.edges[n].source) {
+            addNode(data.edges[n].source); // ,data.nodes[n].url
+        }
+        if (data.edges[n].target) {
+            addNode(data.edges[n].target); // ,data.nodes[n].url
+        }
     }
 
     var targets = [];
 
     for (n in data.edges) {
-        targets.push(data.edges[n].target);
+        var edge=data.edges[n];
+        var found=false;
+        graph.forEachLinkedNode(edge.source, function (node, link) {
+            if (node.id==edge.target) found=true;
+        });
+        if (!found && edge.source && edge.target) graph.addLink(edge.source, edge.target);
     }
-
-    graph.forEachLinkedNode(source, function (node, link) {
-        var idx = targets.indexOf(node.id);
-        if (idx != -1) targets.splice(idx, 1);
-    });
-
-    for (n in targets) {
-        graph.addLink(source, targets[n]);
-    }
-
 }
 
 function onLoad() {
@@ -61,6 +71,7 @@ function onLoad() {
     graphics.setNodeProgram(new Viva.Graph.View.webglImageNodeProgram())
     graphics
         .node(function (node) {
+//            console.log("node-webgl-image",node);
             return Viva.Graph.View.webglImage(12, "/image/" + node["id"]);
         })
         .link(function (link) {
@@ -98,7 +109,7 @@ function onLoad() {
             dataType:"json",
             success:function (res) {
                 console.log("tweets", res);
-                for (var n in res) {
+                for (var n=0;n<res.length;n++) {
                     $("<div>" + res[n].text + "</div>").appendTo(t)
                 }
             }});
@@ -110,6 +121,7 @@ function onLoad() {
 
     var onClick = function (node) {
         console.log("click", node)
+        if (!node || !node.position) return;
         showBox(node);
         graphics.graphCenterChanged(node.position.x,node.position.y);
         renderer.rerender()

@@ -13,8 +13,9 @@ Neography.configure do |config|
   config.log_enabled    = true
 end
 
-def load_tweets(query)
-  res=RestClient.get('http://search.twitter.com/search.json',{:params=> {:q=>query},:accept=>:json})
+# https://dev.twitter.com/docs/api/1/get/search
+def load_tweets(query,lang="en",page=1,rpp=100)
+  res=RestClient.get('http://search.twitter.com/search.json',{:params=> {:q=>query, :lang=>lang,:rpp=>rpp,:page=>page},:accept=>:json})
   puts res.code
   return [] unless res.code==200
 
@@ -26,10 +27,10 @@ end
 twitter = Tweets::Tweets.new
 while true
   begin
-    tweets=load_tweets "neo4j OR waza OR heroku"
+    tweets=load_tweets "neo4j OR #neo4j OR @neo4j OR #waza OR @heroku OR heroku OR #herokuwaza OR waza.heroku.com"
     tweets.each do |tweet|
       puts tweet['from_user'], tweet['text'][0..30]
-      twitter.add_tweet tweet
+      break unless twitter.add_tweet tweet
     end
 
     sleep(60)

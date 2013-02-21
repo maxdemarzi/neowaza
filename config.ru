@@ -9,11 +9,13 @@ require 'sidekiq/web'
 
 Dir.mkdir "public/img" unless Dir.exist? "public/img"
 
+=begin
 Thread.new do
   app=App.new
   puts "Saving images"
   app.pre_save_images
 end
+=end
 
 map '/' do
   run App

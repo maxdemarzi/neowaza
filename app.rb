@@ -29,18 +29,22 @@ class App < Sinatra::Base
     neo.execute_query(cypher_query)["data"].collect{|n| {"id" => n[0]}.merge(n[1]["data"])}
   end
   
-  def edges(username = "neo4j")
+  def edges(username=nil)
+    query = "twid:*"
+    query = "twid:#{username}" if username
     neo = Neography::Rest.new
-    cypher_query = "START n=node:users(twid={username}) 
+    cypher_query = "START n=node:users({query})
                     MATCH n-[:TWEETED]->t-[:MENTIONS|TAGGED]->m 
                     RETURN n.twid as me, coalesce(''+m.twid?,'::'+m.name) as other, count(other) as cnt 
                     ORDER BY cnt DESC 
-                    LIMIT 100
                    "
-    neo.execute_query(cypher_query,  {:username => username})["data"].collect{|n| {"source" => n[0], "target" => n[1]} }
+#    LIMIT 100
+    res = neo.execute_query(cypher_query,  {:query => query})["data"].collect{|n| {"source" => n[0], "target" => n[1]} } #,url=>image_url(n[1])
+    return [ {:source => username} ] if res.empty?
+    res
   end
 
-  def tagged_edges(tag = "neo4j")
+  def tagged_edges(tag = "heroku")
     neo = Neography::Rest.new
     cypher_query = "START n=node:tags(name={tag})
                     MATCH m-[:TWEETED|TAGGED]-t-[:TAGGED]->n
@@ -48,10 +52,16 @@ class App < Sinatra::Base
                     ORDER BY cnt DESC
                     LIMIT 100
                    "
-    neo.execute_query(cypher_query,  {:tag => tag})["data"].collect{|n| {"source" => n[0], "target" => n[1]} }
+    neo.execute_query(cypher_query,  {:tag => tag})["data"].collect{|n| {"source" => n[0], "target" => n[1], url=>image_url(n[1]) } }
   end
 
-  def tweets(username = "neo4j")
+  def users
+    neo = Neography::Rest.new
+    cypher = "START n = node:users('twid:*') RETURN DISTINCT n.twid"
+    neo.execute_query(cypher)["data"].collect{ |id| id[0] }
+  end
+
+  def tweets(username = "heroku")
     neo = Neography::Rest.new
     cypher_query = "START n=node:users(twid={username})
                     MATCH n-[:TWEETED]->t
@@ -62,7 +72,7 @@ class App < Sinatra::Base
     neo.execute_query(cypher_query,  {:username => username})["data"].collect{|n| {"link" => n[0],"date" => n[1],"text" => n[2]}}
   end
 
-  def tagged_tweets(tag = "neo4j")
+  def tagged_tweets(tag = "heroku")
     neo = Neography::Rest.new
     cypher_query = "START n=node:tags(name={tag})
                     MATCH n<-[:TAGGED]-t
@@ -73,12 +83,31 @@ class App < Sinatra::Base
     neo.execute_query(cypher_query,  {:tag => tag})["data"].collect{|n| {"link" => n[0],"date" => n[1],"text" => n[2]}}
   end
 
+  def image_url(id)
+    file="/img/#{id}.png"
+    if (File.exists?("public#{file}"))
+      url=file
+      # base64 doesn't work directly has to be put into a html image element first
+      # see: https://github.com/theo-armour/threo.js/blob/gh-pages/cube-demos/webgl-cubed/webgl-cubed.js#L24
+      #File.open("public#{file}", 'r') do|image_file|
+      #  url="data:image/png;base64,"+Base64.encode64(image_file.read)
+      #end
+      url
+    else
+      make_and_redirect(id)
+    end
+  end
+
   get "/edges/:id" do |id|
     if id=~/^::/
       tagged_edges(id[2..-1]).to_json
     else
       edges(id).to_json
     end
+  end
+
+  get "/edges" do
+    edges().to_json
   end
 
   get "/tweets/:id" do |id|
@@ -90,24 +119,37 @@ class App < Sinatra::Base
   end
 
   get "/" do
-    gon.edges = edges 
+#    gon.nodes = nodes
+#(edges.sample(3) << {"source"=>"neo4j", "target" => "::infinitegraph"})
+    gon.edges = edges
+    puts gon.edges
     haml :index
   end
-    
-  get "/image/:id" do |id|
-puts "#{id}"
 
+  get "/users" do
+    users().to_json
+  end
+
+  get "/image/:id" do |id|
+    puts "#{id}"
+    #content_type 'application/octet-stream'
     content_type 'image/png', :layout => false
     response['Access-Control-Allow-Origin'] = "*"
+    redirect make_and_redirect(id)
+  end
+
+  def make_and_redirect(id)
     file="/img/#{id}.png"
     unless (File.exists?("public#{file}"))
       if id =~ /^::/
         make_image(id,"http://ansrv.com/png?s=#{id[2..-1]}&c=74d0f4&b=231d40&size=5");
+        # return HTTParty.get().parsed_response
+        #make_tags(id)
       else
         make_image(id)
       end
     end
-    redirect(file)
+    file
   end
 
   def pre_save_images

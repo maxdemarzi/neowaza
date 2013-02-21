@@ -1146,7 +1146,7 @@ Viva.Graph.graph = function () {
                         }
                     }
                 }
-
+//                console.log("graph","addNode",augmentedData)
                 node.data = augmentedData;
             }
 
@@ -3071,6 +3071,7 @@ Viva.Graph.Layout.forceDirected = function (graph, settings) {
         },
 
         addNode : function (node) {
+//            console.log("forceDirected","addNode",node)
             initNode(node);
         },
 
@@ -5286,6 +5287,10 @@ Viva.Graph.View.webglGraphics = function (options) {
          * Sets translate operation that should be applied to all nodes and links.
          */
         graphCenterChanged : function (x, y) {
+            offsetX = x;
+            offsetY = y;
+            updateTransformUniform();
+
             updateSize();
         },
 
@@ -5961,7 +5966,7 @@ Viva.Graph.View.renderer = function (graph, settings) {
             var fromNode = graph.getNode(link.fromId),
                 toNode = graph.getNode(link.toId);
 
-            if (!fromNode || !toNode) {
+            if (!fromNode || !toNode || !fromNode.position || !toNode.position) {
                 return;
             }
 
