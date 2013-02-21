@@ -90,25 +90,21 @@ class App < Sinatra::Base
   end
 
   get "/" do
-#    gon.nodes = nodes 
-    gon.edges = edges #(edges.sample(3) << {"source"=>"neo4j", "target" => "::infinitegraph"})
+    gon.edges = edges 
     haml :index
   end
     
   get "/image/:id" do |id|
 puts "#{id}"
-    #content_type 'application/octet-stream'
+
     content_type 'image/png', :layout => false
     response['Access-Control-Allow-Origin'] = "*"
     file="/img/#{id}.png"
     unless (File.exists?("public#{file}"))
       if id =~ /^::/
-        make_mage(id,"http://ansrv.com/png?s=#{id[2..-1]}&c=74d0f4&b=231d40&size=5");
-        # return HTTParty.get().parsed_response
-        #make_tags(id)
+        make_image(id,"http://ansrv.com/png?s=#{id[2..-1]}&c=74d0f4&b=231d40&size=5");
       else
         make_image(id)
-        #get_images([id])
       end
     end
     redirect(file)
