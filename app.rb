@@ -36,9 +36,9 @@ class App < Sinatra::Base
     cypher_query = "START n=node:users({query})
                     MATCH n-[:TWEETED]->t-[:MENTIONS|TAGGED]->m 
                     RETURN n.twid as me, coalesce(''+m.twid?,'::'+m.name) as other, count(other) as cnt 
-                    ORDER BY cnt DESC 
+                    ORDER BY cnt DESC
+                    LIMIT 500
                    "
-#    LIMIT 100
     res = neo.execute_query(cypher_query,  {:query => query})["data"].collect{|n| {"source" => n[0], "target" => n[1]} } #,url=>image_url(n[1])
     return [ {:source => username} ] if res.empty?
     res
@@ -50,9 +50,9 @@ class App < Sinatra::Base
                     MATCH m-[:TWEETED|TAGGED]-t-[:TAGGED]->n
                     RETURN n.name as me, coalesce(''+m.twid?,'::'+m.name) as other, count(other) as cnt
                     ORDER BY cnt DESC
-                    LIMIT 100
+                    LIMIT 500
                    "
-    neo.execute_query(cypher_query,  {:tag => tag})["data"].collect{|n| {"source" => n[0], "target" => n[1], url=>image_url(n[1]) } }
+    neo.execute_query(cypher_query,  {:tag => tag})["data"].collect{|n| {"source" => n[0], "target" => n[1] } } # , url=>image_url(n[1])
   end
 
   def users
