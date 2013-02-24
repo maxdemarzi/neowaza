@@ -27,10 +27,13 @@ class App < Sinatra::Base
     cypher_query << " LIMIT 200"
     neo.execute_query(cypher_query)["data"].collect{|n| {"id" => n[0]}.merge(n[1]["data"])}
   end
-  
+                                                                  
+  def users_query(n=10)
+    users()[0..n].collect{ |u| "twid:#{u}" }.join(" OR ")
+  end
   def edges(username=nil)
-    query = "twid:heroku OR twid:neo4j"
-    query = "twid:#{username}" if username
+    query = "twid:#{username}"
+    query = users_query(10) unless username
     neo = Neography::Rest.new
     cypher_query = "START n=node:users({query})
                     MATCH n-[:TWEETED]->t-[:MENTIONS|TAGGED]->m 
@@ -56,7 +59,13 @@ class App < Sinatra::Base
 
   def users
     neo = Neography::Rest.new
-    cypher = "START n = node:users('twid:*') RETURN DISTINCT n.twid"
+    cypher = "
+      START n=node:users('twid:*')
+      match n-[:TWEETED]->()
+      return n.twid,count(*) as cnt
+      order by cnt desc
+      limit 200
+    "
     neo.execute_query(cypher)["data"].collect{ |id| id[0] }
   end
 

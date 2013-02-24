@@ -37,7 +37,7 @@ function addNeo(graph, data) {
     }
 }
 function loadData(graph,id) {
-    $.ajax("/edges/" + id, {
+    $.ajax(id ? "/edges/" + id : "/edges", {
         type:"GET",
         dataType:"json",
         success:function (res) {
@@ -162,6 +162,6 @@ function onLoad() {
 
 
     renderer.run();
-    loadData(graph,"heroku");
+    loadData(graph);
     l = layout;
 }

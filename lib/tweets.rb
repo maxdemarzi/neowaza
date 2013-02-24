@@ -40,7 +40,7 @@ module Tweets
 
     def find(index,key,value)
       res=@neo.find_node_index(index,key,value)
-      Node.load(res) if res
+      return Node.load(res) if res
       nil
     end
 
