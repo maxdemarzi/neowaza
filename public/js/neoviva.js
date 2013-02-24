@@ -10,38 +10,22 @@ var colors = [
     0xbcbd22ff, 0xdbdb8dff,
     0x17becfff, 0x9edae5ff];
 
-Array.prototype.distinct = function() {
-    var derivedArray = [];
-    for (var i = 0; i < this.length; i += 1) {
-        if (!derivedArray.indexOf(this[i])!=-1) {
-            derivedArray.push(this[i])
-        }
-    }
-    return derivedArray;
-};
-
-var nodes=[];
-
 function addNeo(graph, data) {
-    function addNode(id,url) {
+    function addNode(id) {
         if (!id || typeof id == "undefined") return null;
         var node = graph.getNode(id);
-        if (!node) node = graph.addNode(id, {twid:id}); // , url:url
+        if (!node) node = graph.addNode(id, {twid:id});
         return node;
     }
 
-    if (!data) data = gon;
-
     for (n in data.edges) {
         if (data.edges[n].source) {
-            addNode(data.edges[n].source); // ,data.nodes[n].url
+            addNode(data.edges[n].source);
         }
         if (data.edges[n].target) {
-            addNode(data.edges[n].target); // ,data.nodes[n].url
+            addNode(data.edges[n].target);
         }
     }
-
-    var targets = [];
 
     for (n in data.edges) {
         var edge=data.edges[n];
@@ -52,7 +36,15 @@ function addNeo(graph, data) {
         if (!found && edge.source && edge.target) graph.addLink(edge.source, edge.target);
     }
 }
-
+function loadData(id) {
+    $.ajax("/edges/" + id, {
+        type:"GET",
+        dataType:"json",
+        success:function (res) {
+            addNeo(graph, {edges:res});
+        }
+    })
+}
 function onLoad() {
     var graph = Viva.Graph.graph();
 
@@ -68,7 +60,7 @@ function onLoad() {
     var inputs = Viva.Graph.webglInputEvents(graphics, graph);
     var lastNode = null;
 
-    graphics.setNodeProgram(new Viva.Graph.View.webglImageNodeProgram())
+    graphics.setNodeProgram(new Viva.Graph.View.webglImageNodeProgram());
     graphics
         .node(function (node) {
 //            console.log("node-webgl-image",node);
@@ -88,10 +80,12 @@ function onLoad() {
         });
 
 
-    var onMouseEnter = function(node) {
+    var onMouseEnter = function (node) {
         clearTimeout(timeout);
-        timeout = setTimeout(function() { showBox(node);},250);
-    }
+        timeout = setTimeout(function () {
+            showBox(node);
+        }, 250);
+    };
 
     var showBox = function (node) {
         var t = $("#hoveredName").empty();
@@ -120,19 +114,12 @@ function onLoad() {
     };
 
     var onClick = function (node) {
-        console.log("click", node)
+        console.log("click", node);
         if (!node || !node.position) return;
         showBox(node);
         graphics.graphCenterChanged(node.position.x,node.position.y);
-        renderer.rerender()
-        $.ajax("/edges/" + node.id, {
-            type:"GET",
-            dataType:"json",
-            success:function (res) {
-                console.log(res);
-                addNeo(graph, {edges:res});
-            }
-        })
+        renderer.rerender();
+        loadData(node.id);
     };
     var onDblClick = function (node) {
         console.log("double-click", node)
@@ -146,35 +133,35 @@ function onLoad() {
             })
         }
     };
-    var highlightNode = function(node, color) {
+    var highlightNode = function (node, color) {
         if (!(node && node.id && node.ui)) return;
-        node.ui.size=36;
+        node.ui.size = 36;
         graph.forEachLinkedNode(node.id, function (aNode, link) {
             link.ui.color = color || 4278190335;
             graphics.bringLinkToFront(link.ui)
         })
-    }
+    };
 
     inputs.mouseEnter(function (node) {
-        onMouseEnter(node)
-        unHighlightLinks(lastNode)
-        lastNode = node
-        highlightNode(node)
+        onMouseEnter(node);
+        unHighlightLinks(lastNode);
+        lastNode = node;
+        highlightNode(node);
         renderer.rerender()
     }).mouseLeave(function (node) {
-            onMouseLeave()
-            unHighlightLinks(lastNode)
-            lastNode = null
-            unHighlightLinks(node)
+            onMouseLeave();
+            unHighlightLinks(lastNode);
+            lastNode = null;
+            unHighlightLinks(node);
             renderer.rerender()
         }).dblClick(function (node) {
             onDblClick(node)
         }).click(function (node) {
             onClick(node)
-        })
+        });
 
 
     renderer.run();
-    addNeo(graph);
+    loadData("heroku");
     l = layout;
 }

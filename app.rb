@@ -8,7 +8,6 @@ $LOAD_PATH.unshift(Dir.getwd)
 require "sinatra/reloader"
 
 class App < Sinatra::Base
-  register Gon::Sinatra
 
   configure :development do |config|
     register Sinatra::Reloader
@@ -30,7 +29,7 @@ class App < Sinatra::Base
   end
   
   def edges(username=nil)
-    query = "twid:*"
+    query = "twid:heroku OR twid:neo4j"
     query = "twid:#{username}" if username
     neo = Neography::Rest.new
     cypher_query = "START n=node:users({query})
@@ -119,10 +118,6 @@ class App < Sinatra::Base
   end
 
   get "/" do
-#    gon.nodes = nodes
-#(edges.sample(3) << {"source"=>"neo4j", "target" => "::infinitegraph"})
-    gon.edges = edges
-    puts gon.edges
     haml :index
   end
 
