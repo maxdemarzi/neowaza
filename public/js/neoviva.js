@@ -36,7 +36,7 @@ function addNeo(graph, data) {
         if (!found && edge.source && edge.target) graph.addLink(edge.source, edge.target);
     }
 }
-function loadData(id) {
+function loadData(graph,id) {
     $.ajax("/edges/" + id, {
         type:"GET",
         dataType:"json",
@@ -119,7 +119,7 @@ function onLoad() {
         showBox(node);
         graphics.graphCenterChanged(node.position.x,node.position.y);
         renderer.rerender();
-        loadData(node.id);
+        loadData(graph,node.id);
     };
     var onDblClick = function (node) {
         console.log("double-click", node)
@@ -162,6 +162,6 @@ function onLoad() {
 
 
     renderer.run();
-    loadData("heroku");
+    loadData(graph,"heroku");
     l = layout;
 }
