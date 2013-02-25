@@ -55,7 +55,7 @@ function onLoad() {
         gravity:-1
     });
 
-    var graphics = Viva.Graph.View.webglGraphics();
+    var graphics = Viva.Graph.View.webglGraphics({ clearColor: true, clearColorValue: {r:0,g:0,b:0,a:1}});
     var timeout;
     var inputs = Viva.Graph.webglInputEvents(graphics, graph);
     var lastNode = null;
