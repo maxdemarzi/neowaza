@@ -1,0 +1,62 @@
+<!-- 
+  This is an example html file with some options added. The minimum html file for
+  the graph visualization is:
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <title>Graph Visualization</title>
+      <script type="text/javascript" src="path/to/graph-min.js"></script>
+    </head>
+    <body onload="new Drawing.SimpleGraph({layout: '3d', showStats: true, showInfo: true})">
+    </bod>
+  </html> 
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Graph Visualization</title>
+    <!--<script type="text/javascript" src="build/graph-min.js"></script>-->
+      <script type="text/javascript" src="webgl-frameworks/Three.js"></script>
+      <script type="text/javascript" src="utils/ObjectSelection.js"></script>
+      <script type="text/javascript" src="utils/Label.js"></script>
+      <script type="text/javascript" src="utils/Stats.js"></script>
+      <script type="text/javascript" src="utils/requestAnimationFrame.js"></script>
+      <script type="text/javascript" src="utils/threejs-interaction.js"></script>
+
+      <script type="text/javascript" src="Graph.js"></script>
+      <script type="text/javascript" src="drawings/simple_graph.js"></script>
+      <script type="text/javascript" src="layouts/force-directed-layout.js"></script>
+      <script type="text/javascript" src="/js/jquery-1.9.1.min.js"></script>
+      <script type="text/javascript" src="twitter_graph.js"></script>
+
+    <script type="text/javascript">
+	  var drawing;
+	  function init() {
+	      drawing = new Drawing.SimpleGraph({layout: '2d', render: "webgl" /*"canvas" control via abilities*/, selection: true, numNodes: 0, showStats: true, showInfo: true, showLabels:true, create:loadGraph, graphLayout:{attraction: 5, repulsion: 1, iterations: 5000}});
+	  }
+    </script>
+
+    <style type="text/css">
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: black;
+        color: white;
+        font: 11px monospace;
+        overflow: hidden;
+      }
+      #graph-info {
+        position: absolute;
+        top: 0px;
+        left: 40%;
+        margin: 10px;
+        background-color: #ffffe0;
+        color: #333;
+        padding: 5px 10px;
+      }
+    </style>
+  </head>
+  <body onload="init()">
+    <input type="button" value="Stop layout" onclick="drawing.stop_calculating();"> 
+  </body>
+</html>
