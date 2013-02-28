@@ -35,8 +35,18 @@ function addNeo(graph, data) {
 	}
 }
 
+function addRecent(graph) {
+    $.ajax("/recent", {
+        type:"GET",
+        dataType:"json",
+        success:function (res) {
+            addNeo(graph, {edges:res});
+        }
+    })
+}
+
 function loadGraph(graph,cb) {
-    $.ajax("/edges", {
+    $.ajax("/edges/::waza", {
         type:"GET",
         dataType:"json",
         success:function (res) {
@@ -44,6 +54,7 @@ function loadGraph(graph,cb) {
             cb();
         }
     })
+	setInterval(function() {addRecent(graph)},10000);
 }
 
 function isTag(id) {
@@ -111,4 +122,3 @@ var showBox = function (node) {
             }
         }});
 };
-
