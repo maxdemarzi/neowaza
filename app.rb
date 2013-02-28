@@ -76,7 +76,7 @@ class App < Sinatra::Base
       match n-[:TWEETED]->()
       with n,count(*) as cnt
       MATCH n-[:TWEETED]->t-[:MENTIONS|TAGGED]->()-->()
-      return n.twid,cnt
+      return n.twid,max(cnt) as cnt
       order by cnt desc
       limit {number}
     "
