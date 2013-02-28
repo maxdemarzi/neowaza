@@ -51,13 +51,14 @@ var Drawing = Drawing || {};
 Drawing.SimpleGraph = function(options) {
   var options = options || {};
   
-  this.render = options.render || "canvas";
+  this.renderMode = options.renderMode || "canvas";
   this.layout = options.layout || "2d";
   this.layout_options = options.graphLayout || {};
   this.show_stats = options.showStats || false;
   this.show_info = options.showInfo || false;
   this.show_labels = options.showLabels || false;
   this.selection = options.selection || false;
+  this.click = options.click || false;
   this.limit = options.limit || 1000;
   this.nodes_count = options.numNodes || 20;
   this.edges_count = options.numEdges || 10;
@@ -89,28 +90,29 @@ Drawing.SimpleGraph = function(options) {
   init();
 //  console.log(this.create)
   this.create(this, function() {
-	  createLayout();
+	  that.createLayout();
 	  animate();
   });
 
 
   function init() {
     // Three.js initialization
-    renderer = render=="canvas" ? new THREE.CanvasRenderer({antialias: true}) : new THREE.WebGLRenderer({antialias: true});
+    renderer = that.renderMode =="canvas" ? new THREE.CanvasRenderer({antialias: true}) : new THREE.WebGLRenderer({antialias: true});
     renderer.setSize( window.innerWidth, window.innerHeight );
     
     camera = new THREE.TrackballCamera({
-      fov: 40, 
+      fov: 20, 
       aspect: window.innerWidth / window.innerHeight,
       near: 1,
       far: 1000000,
 
-      rotateSpeed: 0.5,
-      zoomSpeed: 5.2,
+      rotateSpeed: 0.001,
+      zoomSpeed: 3,
       panSpeed: 1,
 
       noZoom: false,
       noPan: false,
+      noRotate: true,
 
       staticMoving: false,
       dynamicDampingFactor: 0.3,
@@ -119,7 +121,7 @@ Drawing.SimpleGraph = function(options) {
 
       keys: [ 65, 83, 68 ]
     });
-    camera.position.z = 5000;
+    camera.position.z = 3000;
 
     THREE.Interaction(camera);
 
@@ -143,9 +145,17 @@ Drawing.SimpleGraph = function(options) {
           } else {
             delete info_text.select;
           }
+
+		  if (obj !=null && typeof that.selection == "function" && obj.hasOwnProperty("node")) {
+			 that.selection.call(null,that,obj)
+		  }
         },
         clicked: function(obj) {
-            console.log("click",obj);
+			console.log("clicked",obj)
+		    if (obj !=null && typeof that.click == "function") {
+				if (obj.hasOwnProperty("node")) that.click.call(null,that,obj)
+				if (obj.parent && obj.parent.hasOwnProperty("node")) that.click.call(null,that,obj.parent)
+		   }
         }
       });
     }
@@ -203,7 +213,7 @@ Drawing.SimpleGraph = function(options) {
     cb();
   }
 
-  function createLayout() {
+  this.createLayout = function() {
 	that.layout_options.width = that.layout_options.width || 1000;
     that.layout_options.height = that.layout_options.height || 1000;
     that.layout_options.iterations = that.layout_options.iterations || 1000000;
@@ -223,11 +233,20 @@ Drawing.SimpleGraph = function(options) {
      return /^::/.test(label); 
   }
 
-  function addLabelObject(node) {
-      if (!that.show_labels) return node;
+  function addLabelObject(node,scene) {
+      if (!that.show_labels ||isTag(node)) return node;
       var label = nodeLabel(node);
       node.data.label_object = new THREE.Label(label, node.data.draw_object);
-      scene.addObject(node.data.label_object);
+	  node.data.label_object.position.x = 0;
+	  node.data.label_object.position.y = - 120;
+	  node.data.label_object.position.z = -1;
+
+	  if (scene) {
+		scene.addObject(node.data.label_object);
+	  }
+	  else {
+		node.data.draw_object.addChild(node.data.label_object);
+	  }
       return node;
   }
 
@@ -236,11 +255,16 @@ Drawing.SimpleGraph = function(options) {
    */
   function drawNode(node) {
 	var tag=isTag(node);
-    var draw_object = tag ? new THREE.Label(nodeLabel(node)) : createImageObject(imageUrl(node));
+	var draw_object;
+	if (tag) {
+	  draw_object = new THREE.Label(nodeLabel(node));
+	} else {
+      draw_object = createImageObject(imageUrl(node));
+	}
 
 	// new THREE.Mesh( geometry, [ new THREE.MeshBasicMaterial( {  color: Math.random() * 0xffffff, opacity: 0.5 } ) ] );
     
-    var area = 5000;
+    var area = 2000;
     draw_object.position.x = Math.floor(Math.random() * (area + area + 1) - area);
     draw_object.position.y = Math.floor(Math.random() * (area + area + 1) - area);
 
@@ -250,12 +274,11 @@ Drawing.SimpleGraph = function(options) {
 
     draw_object.id = node.id;
     node.data.draw_object = draw_object;
+    draw_object.node = node;
     node.position = draw_object.position; // todo is this the right initialization??
     scene.addObject( node.data.draw_object );
 
-	if (!tag)  addLabelObject(node,scene);
-    // addImageObject(node,scene)
-
+	if (!tag) addLabelObject(node);
   }
 
 
@@ -272,7 +295,7 @@ Drawing.SimpleGraph = function(options) {
       line = new THREE.Line( tmp_geo, material, THREE.LinePieces );
       line.scale.x = line.scale.y = line.scale.z = 1;
       line.originalScale = 1;
-      
+      line.edge = {source:source,target:target}
       geometries.push(tmp_geo);
       
       scene.addObject( line );
@@ -303,14 +326,12 @@ Drawing.SimpleGraph = function(options) {
     }
 
 	function imageUrl(node) {
-		return "/img/"+(node.data.title||node.id)+".png";
+		var id=node.data.title||node.id;
+		//return that.renderMode == "canvas" ? "http://api.twitter.com/1/users/profile_image?screen_name="+id+"&size=bigger" : "/img/"+id+".png";
+		return "/image/"+id+".png";
 	}
-    function addImageObject(node,scene) {
-        var plane = createImageObject(imageUrl(node));
-        node.data.label_object = plane;
-        scene.addObject(node.data.label_object);
-  }
 
+   
   function render() {
     // Generate layout if not finished
     if(!graph.layout.finished) {
@@ -336,15 +357,17 @@ Drawing.SimpleGraph = function(options) {
           var node = graph.nodes[i];
           if (labels) {
               if (node.data.label_object == undefined) {
-                  addLabelObject(node, scene);
+                  addLabelObject(node);
+              } else {
+	              node.data.label_object.lookAt(camera.position);
               }
-              node.data.label_object.position.x = node.data.draw_object.position.x;
+/*              node.data.label_object.position.x = node.data.draw_object.position.x;
               node.data.label_object.position.y = node.data.draw_object.position.y - 120;
-              node.data.label_object.position.z = node.data.draw_object.position.z - 1;
-              node.data.label_object.lookAt(camera.position);
+              node.data.label_object.position.z = node.data.draw_object.position.z - 2;
+*/
           } else {
               if (node.data.label_object == undefined) continue;
-              scene.removeObject(node.data.label_object);
+			  node.removeChild(node.data.label_object)
               node.data.label_object = undefined;
           }
           node.data.draw_object.lookAt(camera.position);

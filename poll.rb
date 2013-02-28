@@ -28,7 +28,7 @@ end
 twitter = Tweets::Tweets.new
 while true
   begin
-    query = ENV['TWITTER_SEARCH']||'from:neo4j OR (#waza -Taiji) OR from:heroku OR #herokuwaza OR "waza.heroku.com" OR from:teich OR from:hirodusk OR from:arbales OR from:ajacksified OR from:jacobian OR from:josephruscio OR from:tenderlove OR from:remixeverything OR from:kyle_conroy OR from:lindaliukas OR from:mattt OR from:rands OR from:nzoschke OR from:pvh OR from:datachomp OR from:ryandotsmith OR from:shizron OR from:geemus OR from:yukihiro_matz'
+    query = ENV['TWITTER_SEARCH']||'from:neo4j OR (#waza -Taiji) OR from:heroku OR #waza OR #waza2013 OR #herokuwaza OR "waza.heroku.com" OR from:teich OR from:hirodusk OR from:arbales OR from:ajacksified OR from:jacobian OR from:josephruscio OR from:tenderlove OR from:remixeverything OR from:kyle_conroy OR from:lindaliukas OR from:mattt OR from:rands OR from:nzoschke OR from:pvh OR from:datachomp OR from:ryandotsmith OR from:shizron OR from:geemus OR from:yukihiro_matz'
     tweets=load_tweets query
     tweets.each do |tweet|
       puts tweet['from_user'], tweet['text'][0..30]

@@ -29,7 +29,7 @@ THREE.Label = function(text, parameters) {
     // set font size to measure the text
 	var style = tag ? " bold" : "";
     xc.font = fontsize + " Arial"+style;
-    var len = xc.measureText(text).width;
+    var len = xc.measureText(text).width*1.2;
 
     labelCanvas.setAttribute('width', len);
     
@@ -41,7 +41,7 @@ THREE.Label = function(text, parameters) {
     xc.strokeStyle = "#74d0f4"
     xc.fillText(text, 0, 0);
 
-    var geometry = new THREE.CubeGeometry(len, 200);
+    var geometry = new THREE.PlaneGeometry(len, 200);
     var xm = new THREE.MeshBasicMaterial( { map: new THREE.Texture( labelCanvas ), transparent: true } );
     xm.map.needsUpdate = true;
 

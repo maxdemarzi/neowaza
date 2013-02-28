@@ -28,8 +28,8 @@ class App < Sinatra::Base
     neo.execute_query(cypher_query)["data"].collect{|n| {"id" => n[0]}.merge(n[1]["data"])}
   end
                                                                   
-  def users_query(n=10)
-    users()[0..n].collect{ |u| "twid:#{u}" }.join(" OR ")
+  def users_query(u=users(n), n=10)
+    users(n).collect{ |u| "twid:#{u}" }.join(" OR ")
   end
   def edges(username=nil)
     query = "twid:#{username}"
@@ -37,9 +37,9 @@ class App < Sinatra::Base
     neo = Neography::Rest.new
     cypher_query = "START n=node:users({query})
                     MATCH n-[:TWEETED]->t-[:MENTIONS|TAGGED]->m 
-                    RETURN n.twid as me, coalesce(''+m.twid?,'::'+m.name) as other, count(other) as cnt 
+                    RETURN n.twid as me, coalesce(''+m.twid?,'::'+m.name) as other, count(m) as cnt,max(t.date) as latest 
                     ORDER BY cnt DESC
-                    LIMIT 500
+                    LIMIT 30
                    "
     res = neo.execute_query(cypher_query,  {:query => query})["data"].collect{|n| {"source" => n[0], "target" => n[1]} } #,url=>image_url(n[1])
     return [ {:source => username} ] if res.empty?
@@ -50,23 +50,37 @@ class App < Sinatra::Base
     neo = Neography::Rest.new
     cypher_query = "START n=node:tags(name={tag})
                     MATCH m-[:TWEETED|TAGGED]-t-[:TAGGED]->n
-                    RETURN n.name as me, coalesce(''+m.twid?,'::'+m.name) as other, count(other) as cnt
+                    RETURN '::'+n.name as me, coalesce(''+m.twid?,'::'+m.name) as other, count(other) as cnt,max(t.date) as latest
                     ORDER BY cnt DESC
                     LIMIT 500
                    "
     neo.execute_query(cypher_query,  {:tag => tag})["data"].collect{|n| {"source" => n[0], "target" => n[1] } } # , url=>image_url(n[1])
   end
 
-  def users
+  def new_users(n=50)
+    neo = Neography::Rest.new
+    cypher = "
+      start t=node:tweets('id:*') 
+      match n-[:TWEETED]->t 
+      return n.twid 
+      order by t.date desc 
+      limit {number}
+    "
+    neo.execute_query(cypher,{:number=>n})["data"].collect{ |id| id[0] }.uniq
+  end
+
+  def users(n=200)
     neo = Neography::Rest.new
     cypher = "
       START n=node:users('twid:*')
       match n-[:TWEETED]->()
-      return n.twid,count(*) as cnt
+      with n,count(*) as cnt
+      MATCH n-[:TWEETED]->t-[:MENTIONS|TAGGED]->()-->()
+      return n.twid,cnt
       order by cnt desc
-      limit 200
+      limit {number}
     "
-    neo.execute_query(cypher)["data"].collect{ |id| id[0] }
+    neo.execute_query(cypher,{:number=>n})["data"].collect{ |id| id[0] }
   end
 
   def tweets(username = "heroku")
@@ -91,8 +105,24 @@ class App < Sinatra::Base
     neo.execute_query(cypher_query,  {:tag => tag})["data"].collect{|n| {"link" => n[0],"date" => n[1],"text" => n[2]}}
   end
 
+  def image_or_redirect(id,response)
+    file="/images/#{id}.png"
+    if (File.exists?("public#{file}"))
+      url=file
+      # base64 doesn't work directly has to be put into a html image element first
+      # see: https://github.com/theo-armour/threo.js/blob/gh-pages/cube-demos/webgl-cubed/webgl-cubed.js#L24
+      File.open("public#{file}", 'r') do|image_file|
+        # url="data:image/png;base64,"+Base64.encode64(image_file.read)
+        response.write(image_file.read)
+      end
+      #url
+    else
+      response.redirect(make_and_redirect(id))
+    end
+  end
+  
   def image_url(id)
-    file="/img/#{id}.png"
+    file="/images/#{id}.png"
     if (File.exists?("public#{file}"))
       url=file
       # base64 doesn't work directly has to be put into a html image element first
@@ -114,6 +144,10 @@ class App < Sinatra::Base
     end
   end
 
+  get "/recent" do
+     edges(new_users()).to_json
+  end
+
   get "/edges" do
     edges().to_json
   end
@@ -127,7 +161,8 @@ class App < Sinatra::Base
   end
 
   get "/" do
-    haml :index
+    redirect "/three/index.html"
+#    haml :index
   end
 
   get "/users" do
@@ -136,14 +171,15 @@ class App < Sinatra::Base
 
   get "/image/:id" do |id|
     puts "#{id}"
+    id=id[0..-5] if id =~ /.png$/
     #content_type 'application/octet-stream'
     content_type 'image/png', :layout => false
     response['Access-Control-Allow-Origin'] = "*"
-    redirect make_and_redirect(id)
+    image_or_redirect(id,response)
   end
 
   def make_and_redirect(id)
-    file="/img/#{id}.png"
+    file="/images/#{id}.png"
     unless (File.exists?("public#{file}"))
       if id =~ /^::/
         make_image(id,"http://ansrv.com/png?s=#{id[2..-1]}&c=74d0f4&b=231d40&size=5");
@@ -165,7 +201,7 @@ class App < Sinatra::Base
 
   def make_image(id, url="http://api.twitter.com/1/users/profile_image?screen_name=#{id}&size=bigger")
     $stderr.puts id
-    file="/img/#{id}.png"
+    file="/images/#{id}.png"
     unless File.exists?("public#{file}")
       f = File.new("public#{file}", "w+b")
       f.write HTTParty.get(url).parsed_response
@@ -186,7 +222,7 @@ class App < Sinatra::Base
         self.fill = '#74d0f4'
         self.font_weight = Magick::BoldWeight
     end
-    img.write("gif:public/img/#{id}.png")
+    img.write("gif:public/images/#{id}.png")
   end
 
 end

@@ -31,8 +31,17 @@
 
     <script type="text/javascript">
 	  var drawing;
+	
+	  function getRenderMode() {
+		  try {
+			  return document.createElement("canvas").getContext('experimental-webgl') ? "webgl" : "canvas";
+		  } catch(e) {
+			return "canvas";
+ 		  }
+	  }
 	  function init() {
-	      drawing = new Drawing.SimpleGraph({layout: '2d', render: "webgl" /*"canvas" control via abilities*/, selection: true, numNodes: 0, showStats: true, showInfo: true, showLabels:true, create:loadGraph, graphLayout:{attraction: 5, repulsion: 1, iterations: 5000}});
+		  console.log(getRenderMode());
+	      drawing = new Drawing.SimpleGraph({layout: '2d', renderMode: getRenderMode(), selection: showSelection, click: showClick, numNodes: 0, showStats: false, showInfo: false, showLabels:true, create:loadGraph, graphLayout:{attraction: 10, repulsion: 0.3, iterations: 5000}});
 	  }
     </script>
 
@@ -47,16 +56,37 @@
       }
       #graph-info {
         position: absolute;
-        top: 0px;
-        left: 40%;
-        margin: 10px;
+        bottom: 0px;
+        left: 10px;
+        margin: 5px;
         background-color: #ffffe0;
         color: #333;
         padding: 5px 10px;
       }
+	#search {
+	    top: 5px;
+	    margin-left: auto;
+	    margin-right: auto;
+		display:none;
+	}
+	#stop-layout {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+	}
+	#hoveredName {
+        color: black;
+		position: absolute; top: 40px; left: 10px; padding: 7px; background-color: #EFEFEF; text-align: center; display: none; max-width: 20em; font-family: "Helvetica";}
+	#hoveredName > img { margin-top: 6px;}
+	#hoveredName > div { font-size: smaller; text-align: left; margin-bottom: 5px; border-bottom: 1px solid black;}
     </style>
   </head>
   <body onload="init()">
-    <input type="button" value="Stop layout" onclick="drawing.stop_calculating();"> 
+    <input id="stop-layout" type="button" value="Stop layout" onclick="drawing.stop_calculating();"/> 
+    <input type="text "name="search" id="search"/>
+	<div id="hoveredName">
+	</div>
+	<div id="content">
+	</div>
   </body>
 </html>
