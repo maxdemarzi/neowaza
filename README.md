@@ -7,9 +7,9 @@ Neo4j App for Waza
 Requirements
 ------------
 
-Locally:
-rake neo4j:install
-rake neo4j:start
-brew install redis
-brew install imagemagick --disable-openmp --build-from-source
-bundle install
+Locally:  
+1. `rake neo4j:install`  
+2. `rake neo4j:start`  
+3. `brew install redis`  
+4. `brew install imagemagick --disable-openmp --build-from-source`  
+5. `bundle install`  
