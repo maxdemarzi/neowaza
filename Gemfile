@@ -26,4 +26,4 @@ gem 'oj'
 gem 'haml'
 gem 'gon-sinatra'
 gem 'rest-client'
-gem 'rmagick', "2.13.1"
+gem 'rmagick', "2.13.2"
